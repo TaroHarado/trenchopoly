@@ -30,6 +30,7 @@
 import { Server as HTTPServer } from "http";
 import { Server as SocketIOServer } from "socket.io";
 import { prisma } from "@/lib/prisma";
+import { memoryStore, hasDatabase } from "@/lib/memoryStore";
 import { validateAction, applyAction, checkGameEnd, rollDice } from "@/server/gameEngine";
 import { GameAction, GameState, BoardConfig } from "@/lib/types";
 import { verifySocketAuth } from "@/lib/socketAuth";
