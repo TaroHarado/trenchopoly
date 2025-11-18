@@ -46,6 +46,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // TypeScript guard: after the check above, buyInSol is guaranteed to be a number
+    const buyInSol = game.buyInSol;
+
     const player = game.players[0];
     if (!player) {
       return NextResponse.json(
@@ -69,7 +72,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const amountLamports = solToLamports(game.buyInSol);
+    const amountLamports = solToLamports(buyInSol);
 
     // Check for idempotency - if this signature was already processed
     // For SQLite, we need to search differently since JSON filters aren't supported
@@ -142,7 +145,7 @@ export async function POST(request: NextRequest) {
         data: {
           userId: user.id,
           type: "GAME_BUYIN",
-          amountSol: game.buyInSol,
+          amountSol: buyInSol,
           signature,
           metadata: JSON.stringify({ gameId }),
         },

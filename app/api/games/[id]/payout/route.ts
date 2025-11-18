@@ -56,8 +56,11 @@ export async function POST(
       );
     }
 
+    // TypeScript guard: after the check above, buyInSol is guaranteed to be a number
+    const buyInSol = game.buyInSol;
+
     // Calculate pot and payout
-    const totalBuyIns = game.players.length * game.buyInSol;
+    const totalBuyIns = game.players.length * buyInSol;
     const platformFee = totalBuyIns * PLATFORM_FEE_PERCENT;
     const winnerPayout = totalBuyIns - platformFee;
 

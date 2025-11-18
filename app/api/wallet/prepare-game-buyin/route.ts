@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // TypeScript guard: after the check above, buyInSol is guaranteed to be a number
+    const buyInSol = game.buyInSol;
+
     const player = game.players[0];
     if (!player) {
       return NextResponse.json(
@@ -80,7 +83,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const amountLamports = solToLamports(game.buyInSol);
+    const amountLamports = solToLamports(buyInSol);
 
     return NextResponse.json({
       amountLamports,
