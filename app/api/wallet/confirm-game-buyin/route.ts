@@ -72,15 +72,22 @@ export async function POST(request: NextRequest) {
     const amountLamports = solToLamports(game.buyInSol);
 
     // Check for idempotency - if this signature was already processed
-    const existingLog = await prisma.transactionLog.findFirst({
+    // For SQLite, we need to search differently since JSON filters aren't supported
+    const allBuyInLogs = await prisma.transactionLog.findMany({
       where: {
         signature,
         type: "GAME_BUYIN",
-        metadata: {
-          path: ["gameId"],
-          equals: gameId,
-        },
       },
+    });
+    
+    const existingLog = allBuyInLogs.find(log => {
+      if (!log.metadata) return false;
+      try {
+        const metadata = JSON.parse(log.metadata);
+        return metadata.gameId === gameId;
+      } catch {
+        return false;
+      }
     });
 
     if (existingLog) {

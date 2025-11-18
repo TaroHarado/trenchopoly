@@ -70,14 +70,21 @@ export async function POST(
     }
 
     // Check for idempotency - if payout was already processed
-    const existingPayoutLog = await prisma.transactionLog.findFirst({
+    // For SQLite, we need to search differently since JSON filters aren't supported
+    const allPayoutLogs = await prisma.transactionLog.findMany({
       where: {
         type: "GAME_PAYOUT",
-        metadata: {
-          path: ["gameId"],
-          equals: gameId,
-        },
       },
+    });
+    
+    const existingPayoutLog = allPayoutLogs.find(log => {
+      if (!log.metadata) return false;
+      try {
+        const metadata = JSON.parse(log.metadata);
+        return metadata.gameId === gameId;
+      } catch {
+        return false;
+      }
     });
 
     if (existingPayoutLog) {

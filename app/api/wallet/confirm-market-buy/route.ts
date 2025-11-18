@@ -65,15 +65,22 @@ export async function POST(request: NextRequest) {
     const amountLamports = solToLamports(listing.priceSol);
 
     // Check for idempotency
-    const existingLog = await prisma.transactionLog.findFirst({
+    // For SQLite, we need to search differently since JSON filters aren't supported
+    const allMarketLogs = await prisma.transactionLog.findMany({
       where: {
         signature,
         type: "MARKET_BUY",
-        metadata: {
-          path: ["listingId"],
-          equals: listingId,
-        },
       },
+    });
+    
+    const existingLog = allMarketLogs.find(log => {
+      if (!log.metadata) return false;
+      try {
+        const metadata = JSON.parse(log.metadata);
+        return metadata.listingId === listingId;
+      } catch {
+        return false;
+      }
     });
 
     if (existingLog) {
