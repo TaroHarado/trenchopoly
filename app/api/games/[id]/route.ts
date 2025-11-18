@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { memoryStore, hasDatabase } from "@/lib/memoryStore";
 import { isBotUser } from "@/lib/botUtils";
 
 export async function GET(
@@ -9,6 +10,45 @@ export async function GET(
   try {
     const gameId = params.id;
 
+    // If no database, use memory store
+    if (!hasDatabase()) {
+      const game = memoryStore.getGame(gameId);
+      if (!game) {
+        return NextResponse.json(
+          { error: "Game not found" },
+          { status: 404 }
+        );
+      }
+
+      const creator = memoryStore.getUser(game.creatorId);
+      const players = memoryStore.getPlayersByGame(gameId);
+
+      const playersWithBots = players.map((player) => {
+        const user = memoryStore.getUser(player.userId);
+        return {
+          ...player,
+          user: user ? {
+            id: user.id,
+            walletAddress: user.walletAddress,
+            username: user.username,
+          } : null,
+        };
+      });
+
+      return NextResponse.json({ 
+        game: {
+          ...game,
+          creator: creator ? {
+            id: creator.id,
+            walletAddress: creator.walletAddress,
+            username: creator.username,
+          } : null,
+          players: playersWithBots,
+        }
+      });
+    }
+
+    // Use database
     const game = await prisma.game.findUnique({
       where: { id: gameId },
       include: {

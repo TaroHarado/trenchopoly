@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { memoryStore, hasDatabase } from "@/lib/memoryStore";
 
 export async function POST(
   request: NextRequest,
@@ -26,6 +27,47 @@ export async function POST(
       );
     }
 
+    // If no database, use memory store
+    if (!hasDatabase()) {
+      const game = memoryStore.getGame(gameId);
+      if (!game) {
+        return NextResponse.json(
+          { error: "Game not found" },
+          { status: 404 }
+        );
+      }
+
+      const players = memoryStore.getPlayersByGame(gameId);
+      const player = players.find((p) => p.userId === user.id);
+      if (!player) {
+        return NextResponse.json(
+          { error: "Not a player in this game" },
+          { status: 400 }
+        );
+      }
+
+      const updatedPlayer = memoryStore.updatePlayer(player.id, { isReady: ready });
+      if (!updatedPlayer) {
+        return NextResponse.json(
+          { error: "Failed to update player" },
+          { status: 500 }
+        );
+      }
+
+      const memoryUser = memoryStore.getUser(user.id);
+      return NextResponse.json({ 
+        player: {
+          ...updatedPlayer,
+          user: memoryUser ? {
+            id: memoryUser.id,
+            walletAddress: memoryUser.walletAddress,
+            username: memoryUser.username,
+          } : null,
+        }
+      });
+    }
+
+    // Use database
     const game = await prisma.game.findUnique({
       where: { id: gameId },
       include: {

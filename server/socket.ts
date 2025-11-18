@@ -74,21 +74,48 @@ export function initializeSocket(server: HTTPServer) {
         });
 
         // Verify game exists
-        const game = await prisma.game.findUnique({
-          where: { id: gameId },
-          include: {
-            players: {
-              include: {
-                user: true,
+        let game: any;
+        let players: any[] = [];
+
+        if (!hasDatabase()) {
+          // Use memory store
+          const memoryGame = memoryStore.getGame(gameId);
+          if (!memoryGame) {
+            console.error("[SOCKET SERVER] join-room: Game not found", { gameId, socketId: socket.id });
+            socket.emit("error", { message: "Game not found" });
+            return;
+          }
+          game = memoryGame;
+          players = memoryStore.getPlayersByGame(gameId).map(p => {
+            const user = memoryStore.getUser(p.userId);
+            return {
+              ...p,
+              user: user ? {
+                id: user.id,
+                walletAddress: user.walletAddress,
+                username: user.username,
+              } : null,
+            };
+          });
+        } else {
+          // Use database
+          game = await prisma.game.findUnique({
+            where: { id: gameId },
+            include: {
+              players: {
+                include: {
+                  user: true,
+                },
               },
             },
-          },
-        });
+          });
 
-        if (!game) {
-          console.error("[SOCKET SERVER] join-room: Game not found", { gameId, socketId: socket.id });
-          socket.emit("error", { message: "Game not found" });
-          return;
+          if (!game) {
+            console.error("[SOCKET SERVER] join-room: Game not found", { gameId, socketId: socket.id });
+            socket.emit("error", { message: "Game not found" });
+            return;
+          }
+          players = game.players;
         }
 
         socket.join(room);
@@ -112,7 +139,7 @@ export function initializeSocket(server: HTTPServer) {
         // Broadcast player list update
         io!.to(room).emit("player-joined", {
           gameId,
-          players: game.players.map((p) => ({
+          players: players.map((p) => ({
             id: p.id,
             userId: p.userId,
             user: p.user,
@@ -247,18 +274,31 @@ export function initializeSocket(server: HTTPServer) {
           newState.winnerNetWorth = gameEnd.winnerNetWorth;
         }
 
-        // 3) сохраняем стейт обратно в БД
-        await prisma.game.update({
-          where: { id: gameId },
-          data: {
+        // 3) сохраняем стейт обратно в БД или memory store
+        if (!hasDatabase()) {
+          // Use memory store
+          memoryStore.updateGame(gameId, {
             turnState: JSON.stringify(newState),
             status: gameFinished ? "FINISHED" : game.status,
             ...(gameFinished && gameEnd.winnerId ? {
               winnerId: gameEnd.winnerId,
               endedAt: new Date(),
             } : {}),
-          },
-        });
+          });
+        } else {
+          // Use database
+          await prisma.game.update({
+            where: { id: gameId },
+            data: {
+              turnState: JSON.stringify(newState),
+              status: gameFinished ? "FINISHED" : game.status,
+              ...(gameFinished && gameEnd.winnerId ? {
+                winnerId: gameEnd.winnerId,
+                endedAt: new Date(),
+              } : {}),
+            },
+          });
+        }
 
         // 4) шлём state-update во ВСЮ комнату (включая отправителя)
         io!.to(`room:${gameId}`).emit("state-update", {

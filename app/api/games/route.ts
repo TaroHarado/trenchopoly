@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSessionUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { memoryStore, hasDatabase } from "@/lib/memoryStore";
 import { CreateGameRequest } from "@/lib/types";
 import { createInitialState } from "@/server/gameEngine";
 import boardConfigData from "@/config/board.json";
@@ -12,9 +13,49 @@ function generateGameCode(): string {
 
 export async function GET(request: NextRequest) {
   try {
-    // If no database, return empty games list
-    if (!process.env.DATABASE_URL || process.env.DATABASE_URL === "file:./prisma/dev.db") {
-      return NextResponse.json({ games: [] });
+    // If no database, use memory store
+    if (!hasDatabase()) {
+      const searchParams = request.nextUrl.searchParams;
+      const type = searchParams.get("type");
+      const status = searchParams.get("status");
+      const buyInMin = searchParams.get("buyInMin");
+      const buyInMax = searchParams.get("buyInMax");
+
+      const filters: any = {};
+      if (type) filters.type = type;
+      if (status) filters.status = status;
+      if (buyInMin) filters.buyInMin = parseFloat(buyInMin);
+      if (buyInMax) filters.buyInMax = parseFloat(buyInMax);
+
+      const games = memoryStore.getAllGames(filters);
+      
+      // Format games with creator and players
+      const formattedGames = games.map(game => {
+        const creator = memoryStore.getUser(game.creatorId);
+        const players = memoryStore.getPlayersByGame(game.id);
+        
+        return {
+          ...game,
+          creator: creator ? {
+            id: creator.id,
+            walletAddress: creator.walletAddress,
+            username: creator.username,
+          } : null,
+          players: players.map(p => {
+            const user = memoryStore.getUser(p.userId);
+            return {
+              ...p,
+              user: user ? {
+                id: user.id,
+                walletAddress: user.walletAddress,
+                username: user.username,
+              } : null,
+            };
+          }),
+        };
+      });
+
+      return NextResponse.json({ games: formattedGames });
     }
 
     const searchParams = request.nextUrl.searchParams;
@@ -83,14 +124,6 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    // If no database, return error
-    if (!process.env.DATABASE_URL || process.env.DATABASE_URL === "file:./prisma/dev.db") {
-      return NextResponse.json(
-        { error: "Database not configured. Games cannot be created without a database." },
-        { status: 503 }
-      );
-    }
-
     const user = await getSessionUser().catch(() => null);
     if (!user) {
       return NextResponse.json(
@@ -119,6 +152,53 @@ export async function POST(request: NextRequest) {
     const code = generateGameCode();
     const boardConfigJson = JSON.stringify(boardConfig);
 
+    // If no database, use memory store
+    if (!hasDatabase()) {
+      // Ensure user exists in memory store
+      let memoryUser = memoryStore.getUser(user.id);
+      if (!memoryUser) {
+        memoryUser = memoryStore.createUser(user.walletAddress, user.username || null);
+      }
+
+      const game = memoryStore.createGame({
+        code,
+        type,
+        buyInSol: type === "PAID" ? buyInSol! : null,
+        maxPlayers,
+        creatorId: user.id,
+        boardConfig: boardConfigJson,
+      });
+
+      // Create host player
+      const player = memoryStore.createPlayer({
+        gameId: game.id,
+        userId: user.id,
+        isHost: true,
+        isReady: false,
+        hasPaidBuyIn: type === "FREE",
+      });
+
+      return NextResponse.json({ 
+        game: {
+          ...game,
+          creator: {
+            id: memoryUser.id,
+            walletAddress: memoryUser.walletAddress,
+            username: memoryUser.username,
+          },
+          players: [{
+            ...player,
+            user: {
+              id: memoryUser.id,
+              walletAddress: memoryUser.walletAddress,
+              username: memoryUser.username,
+            },
+          }],
+        }
+      });
+    }
+
+    // Use database
     try {
       const game = await prisma.game.create({
         data: {
