@@ -51,12 +51,12 @@ export async function GET(request: NextRequest) {
     let filtered = listings;
     if (type) {
       filtered = filtered.filter(
-        (l) => l.inventoryItem.customItem.type === type
+        (l) => l.inventoryItem.customItem?.type === type
       );
     }
     if (rarity) {
       filtered = filtered.filter(
-        (l) => l.inventoryItem.customItem.rarity === rarity
+        (l) => l.inventoryItem.customItem?.rarity === rarity
       );
     }
 
