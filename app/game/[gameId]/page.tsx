@@ -500,7 +500,7 @@ export default function GamePage() {
 
   // CRITICAL: Show finished screen if game is finished
   if (game.status === "FINISHED") {
-    const winner = game.players.find((p) => p.id === game.winnerId);
+    const winner = game.players.find((p: { id: string; userId: string; user: { walletAddress: string; username: string | null } | null }) => p.id === game.winnerId);
     const winnerUser = winner?.user;
     const isWinner = winner?.userId === authData?.user?.id;
     
@@ -622,7 +622,7 @@ export default function GamePage() {
                   >
                     {readyLoading ? "Processing..." : "Ready"}
                   </button>
-                  {game.players.find((p) => p.isHost)?.userId === authData?.user?.id && (
+                  {game.players.find((p: { id: string; userId: string; isHost: boolean }) => p.isHost)?.userId === authData?.user?.id && (
                     <button
                       onClick={handleStart}
                       disabled={starting}
@@ -753,7 +753,7 @@ export default function GamePage() {
               <h2 className="text-lg font-bold mb-3 text-zinc-100">Chat</h2>
               <div className="flex-1 overflow-y-auto mb-3 space-y-2 text-sm">
                 {chatMessages.map((msg, idx) => {
-                  const player = game.players.find((p) => p.userId === msg.userId);
+                  const player = game.players.find((p: { id: string; userId: string; user: { walletAddress: string; username: string | null } | null }) => p.userId === msg.userId);
                   const displayName = player?.user?.username || player?.user?.walletAddress?.slice(0, 8) || msg.userId;
                   return (
                     <div key={idx}>
