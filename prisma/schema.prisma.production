@@ -1,0 +1,14 @@
+// This is your Prisma schema file for PRODUCTION (PostgreSQL)
+// For local development, use schema.prisma with SQLite
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"  // Changed from "sqlite" for production
+  url      = env("DATABASE_URL")
+}
+
+// ... rest of the schema is the same ...
+
