@@ -1,0 +1,331 @@
+{
+  "tiles": [
+    {
+      "id": "start",
+      "type": "START",
+      "name": "GO",
+      "position": 0
+    },
+    {
+      "id": "property-1",
+      "type": "PROPERTY",
+      "name": "Solana Beach",
+      "position": 1,
+      "price": 60,
+      "rent": 2,
+      "colorGroup": "brown"
+    },
+    {
+      "id": "chance-1",
+      "type": "CHANCE",
+      "name": "Chance",
+      "position": 2
+    },
+    {
+      "id": "property-2",
+      "type": "PROPERTY",
+      "name": "DeFi District",
+      "position": 3,
+      "price": 60,
+      "rent": 4,
+      "colorGroup": "brown"
+    },
+    {
+      "id": "tax-1",
+      "type": "TAX",
+      "name": "Income Tax",
+      "position": 4,
+      "amount": 200
+    },
+    {
+      "id": "property-3",
+      "type": "PROPERTY",
+      "name": "Railway Station",
+      "position": 5,
+      "price": 200,
+      "rent": 25,
+      "colorGroup": "railroad"
+    },
+    {
+      "id": "property-4",
+      "type": "PROPERTY",
+      "name": "NFT Avenue",
+      "position": 6,
+      "price": 100,
+      "rent": 6,
+      "colorGroup": "light-blue"
+    },
+    {
+      "id": "chance-2",
+      "type": "CHANCE",
+      "name": "Chance",
+      "position": 7
+    },
+    {
+      "id": "property-5",
+      "type": "PROPERTY",
+      "name": "Meme Coin Street",
+      "position": 8,
+      "price": 100,
+      "rent": 6,
+      "colorGroup": "light-blue"
+    },
+    {
+      "id": "property-6",
+      "type": "PROPERTY",
+      "name": "DEX Plaza",
+      "position": 9,
+      "price": 120,
+      "rent": 8,
+      "colorGroup": "light-blue"
+    },
+    {
+      "id": "jail",
+      "type": "JAIL",
+      "name": "Jail",
+      "position": 10
+    },
+    {
+      "id": "property-7",
+      "type": "PROPERTY",
+      "name": "Staking Square",
+      "position": 11,
+      "price": 140,
+      "rent": 10,
+      "colorGroup": "pink"
+    },
+    {
+      "id": "property-8",
+      "type": "PROPERTY",
+      "name": "Utility Company",
+      "position": 12,
+      "price": 150,
+      "rent": 0,
+      "colorGroup": "utility"
+    },
+    {
+      "id": "property-9",
+      "type": "PROPERTY",
+      "name": "Yield Farm",
+      "position": 13,
+      "price": 140,
+      "rent": 10,
+      "colorGroup": "pink"
+    },
+    {
+      "id": "property-10",
+      "type": "PROPERTY",
+      "name": "Liquidity Pool",
+      "position": 14,
+      "price": 160,
+      "rent": 12,
+      "colorGroup": "pink"
+    },
+    {
+      "id": "property-11",
+      "type": "PROPERTY",
+      "name": "Railway Station 2",
+      "position": 15,
+      "price": 200,
+      "rent": 25,
+      "colorGroup": "railroad"
+    },
+    {
+      "id": "property-12",
+      "type": "PROPERTY",
+      "name": "DAO Headquarters",
+      "position": 16,
+      "price": 180,
+      "rent": 14,
+      "colorGroup": "orange"
+    },
+    {
+      "id": "chance-3",
+      "type": "CHANCE",
+      "name": "Chance",
+      "position": 17
+    },
+    {
+      "id": "property-13",
+      "type": "PROPERTY",
+      "name": "Governance Tower",
+      "position": 18,
+      "price": 180,
+      "rent": 14,
+      "colorGroup": "orange"
+    },
+    {
+      "id": "property-14",
+      "type": "PROPERTY",
+      "name": "Token Launchpad",
+      "position": 19,
+      "price": 200,
+      "rent": 16,
+      "colorGroup": "orange"
+    },
+    {
+      "id": "free-parking",
+      "type": "FREE_PARKING",
+      "name": "Free Parking",
+      "position": 20
+    },
+    {
+      "id": "property-15",
+      "type": "PROPERTY",
+      "name": "Smart Contract Hub",
+      "position": 21,
+      "price": 220,
+      "rent": 18,
+      "colorGroup": "red"
+    },
+    {
+      "id": "chance-4",
+      "type": "CHANCE",
+      "name": "Chance",
+      "position": 22
+    },
+    {
+      "id": "property-16",
+      "type": "PROPERTY",
+      "name": "Oracle Network",
+      "position": 23,
+      "price": 220,
+      "rent": 18,
+      "colorGroup": "red"
+    },
+    {
+      "id": "property-17",
+      "type": "PROPERTY",
+      "name": "Bridge Protocol",
+      "position": 24,
+      "price": 240,
+      "rent": 20,
+      "colorGroup": "red"
+    },
+    {
+      "id": "property-18",
+      "type": "PROPERTY",
+      "name": "Railway Station 3",
+      "position": 25,
+      "price": 200,
+      "rent": 25,
+      "colorGroup": "railroad"
+    },
+    {
+      "id": "property-19",
+      "type": "PROPERTY",
+      "name": "Layer 2 Express",
+      "position": 26,
+      "price": 260,
+      "rent": 22,
+      "colorGroup": "yellow"
+    },
+    {
+      "id": "property-20",
+      "type": "PROPERTY",
+      "name": "Sidechain Lane",
+      "position": 27,
+      "price": 260,
+      "rent": 22,
+      "colorGroup": "yellow"
+    },
+    {
+      "id": "property-21",
+      "type": "PROPERTY",
+      "name": "Utility Company 2",
+      "position": 28,
+      "price": 150,
+      "rent": 0,
+      "colorGroup": "utility"
+    },
+    {
+      "id": "property-22",
+      "type": "PROPERTY",
+      "name": "Scaling Solution",
+      "position": 29,
+      "price": 280,
+      "rent": 24,
+      "colorGroup": "yellow"
+    },
+    {
+      "id": "go-to-jail",
+      "type": "GO_TO_JAIL",
+      "name": "Go to Jail",
+      "position": 30
+    },
+    {
+      "id": "property-23",
+      "type": "PROPERTY",
+      "name": "Green Energy Token",
+      "position": 31,
+      "price": 300,
+      "rent": 26,
+      "colorGroup": "green"
+    },
+    {
+      "id": "property-24",
+      "type": "PROPERTY",
+      "name": "Carbon Credit Market",
+      "position": 32,
+      "price": 300,
+      "rent": 26,
+      "colorGroup": "green"
+    },
+    {
+      "id": "chance-5",
+      "type": "CHANCE",
+      "name": "Chance",
+      "position": 33
+    },
+    {
+      "id": "property-25",
+      "type": "PROPERTY",
+      "name": "ESG Protocol",
+      "position": 34,
+      "price": 320,
+      "rent": 28,
+      "colorGroup": "green"
+    },
+    {
+      "id": "property-26",
+      "type": "PROPERTY",
+      "name": "Railway Station 4",
+      "position": 35,
+      "price": 200,
+      "rent": 25,
+      "colorGroup": "railroad"
+    },
+    {
+      "id": "chance-6",
+      "type": "CHANCE",
+      "name": "Chance",
+      "position": 36
+    },
+    {
+      "id": "property-27",
+      "type": "PROPERTY",
+      "name": "Blue Chip Boulevard",
+      "position": 37,
+      "price": 350,
+      "rent": 35,
+      "colorGroup": "dark-blue"
+    },
+    {
+      "id": "tax-2",
+      "type": "TAX",
+      "name": "Luxury Tax",
+      "position": 38,
+      "amount": 100
+    },
+    {
+      "id": "property-28",
+      "type": "PROPERTY",
+      "name": "Whale Street",
+      "position": 39,
+      "price": 400,
+      "rent": 50,
+      "colorGroup": "dark-blue"
+    }
+  ]
+}
+

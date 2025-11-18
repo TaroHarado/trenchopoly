@@ -1,0 +1,160 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  walletAddress String   @unique
+  username      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  gamesCreated  Game[]            @relation("GameCreator")
+  gamePlayers   GamePlayer[]
+  inventory     InventoryItem[]
+  listings      MarketplaceListing[]
+  transactions  TransactionLog[]
+  caseOpens     UserCaseOpen[]
+}
+
+model Game {
+  id              String        @id @default(cuid())
+  code            String        @unique
+  status          String        @default("WAITING") // GameStatus: WAITING, IN_PROGRESS, FINISHED
+  type            String        // GameType: FREE, PAID
+  buyInSol        Float?
+  maxPlayers      Int           @default(6)
+  creatorId       String
+  creator         User          @relation("GameCreator", fields: [creatorId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  boardConfig     String        // JSON string of board configuration
+  turnState       String?       // JSON string of current game state
+  winnerId       String?
+  endedAt         DateTime?
+
+  players         GamePlayer[]
+}
+
+model GamePlayer {
+  id           String   @id @default(cuid())
+  gameId       String
+  userId       String
+  position     Int      @default(0)
+  balance      Float    @default(1500)
+  isReady      Boolean  @default(false)
+  isHost       Boolean  @default(false)
+  hasPaidBuyIn Boolean  @default(false)
+  joinedAt     DateTime @default(now())
+
+  game         Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id])
+}
+
+model CustomItem {
+  id          String          @id @default(cuid())
+  type        String          // CustomItemType: TILE, CARD
+  name        String
+  description String
+  rarity      String          // Rarity: COMMON, RARE, EPIC, LEGENDARY
+  iconUrl     String?
+  effectData  String          // JSON string
+
+  inventoryItems InventoryItem[]
+  caseChances    CaseItemChance[]
+}
+
+model InventoryItem {
+  id           String      @id @default(cuid())
+  userId       String
+  customItemId String?
+  caseId       String?     // For items from cases
+  itemId       String?     // Case item ID (e.g. 'bonk', 'sol')
+  rarity       String?     // Case item rarity (COMMON, RARE, EPIC, ULTRA)
+  createdAt    DateTime    @default(now())
+
+  user         User        @relation(fields: [userId], references: [id])
+  customItem   CustomItem? @relation(fields: [customItemId], references: [id])
+  listing     MarketplaceListing?
+}
+
+model MarketplaceListing {
+  id             String        @id @default(cuid())
+  sellerId       String
+  inventoryItemId String       @unique
+  priceSol       Float
+  status         String        @default("ACTIVE") // ListingStatus: ACTIVE, SOLD, CANCELLED
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  seller         User          @relation(fields: [sellerId], references: [id])
+  inventoryItem  InventoryItem @relation(fields: [inventoryItemId], references: [id])
+}
+
+model Case {
+  id          String           @id @default(cuid())
+  name        String
+  description String
+  priceSol    Float
+  createdAt   DateTime         @default(now())
+
+  itemChances CaseItemChance[]
+}
+
+model CaseItemChance {
+  id           String     @id @default(cuid())
+  caseId       String
+  customItemId String
+  chance       Float
+
+  case         Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  customItem   CustomItem @relation(fields: [customItemId], references: [id])
+}
+
+model TransactionLog {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String
+  amountSol   Float
+  signature   String?
+  metadata    String?  // JSON string
+  createdAt   DateTime @default(now())
+
+  user        User     @relation(fields: [userId], references: [id])
+}
+
+model AuthNonce {
+  id           String   @id @default(cuid())
+  walletAddress String   @unique
+  nonce        String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+}
+
+model UserCaseOpen {
+  id        String   @id @default(cuid())
+  userId    String
+  caseId    String
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, caseId])
+}
+
+// Enums converted to String for SQLite compatibility
+// GameStatus: WAITING, IN_PROGRESS, FINISHED
+// GameType: FREE, PAID
+// CustomItemType: TILE, CARD
+// Rarity: COMMON, RARE, EPIC, LEGENDARY
+// ListingStatus: ACTIVE, SOLD, CANCELLED
+
