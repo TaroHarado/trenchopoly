@@ -159,7 +159,6 @@ export async function POST(
           position: 0,
           balance: 1500,
           joinedAt: new Date(),
-          user: null as any, // Bot doesn't have a real user
         });
         
         console.log(`Bot player created: ${bot.id} (${bot.name})`);
