@@ -242,7 +242,7 @@ export default function GamePage() {
     return () => {
       newSocket.close();
     };
-  }, [gameId]);
+  }, [gameId, refetch]);
 
   const handleAction = async (action: GameAction) => {
     console.log("=== handleAction CALLED ===");

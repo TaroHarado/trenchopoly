@@ -41,17 +41,43 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Get or create user
-    let user = await prisma.user.findUnique({
-      where: { walletAddress },
-    });
+    // Check if database is available
+    const hasDatabase = process.env.DATABASE_URL && 
+      process.env.DATABASE_URL !== "file:./prisma/dev.db" &&
+      !process.env.DATABASE_URL.includes("undefined");
 
-    if (!user) {
-      user = await prisma.user.create({
-        data: {
+    let user;
+    
+    if (hasDatabase) {
+      try {
+        // Get or create user in database
+        user = await prisma.user.findUnique({
+          where: { walletAddress },
+        });
+
+        if (!user) {
+          user = await prisma.user.create({
+            data: {
+              walletAddress,
+            },
+          });
+        }
+      } catch (dbError: any) {
+        console.warn("[AUTH_VERIFY] Database error, using walletAddress as ID:", dbError?.message);
+        // Fallback: use walletAddress as ID
+        user = {
+          id: walletAddress,
           walletAddress,
-        },
-      });
+          username: null,
+        };
+      }
+    } else {
+      // No database: use walletAddress as ID
+      user = {
+        id: walletAddress,
+        walletAddress,
+        username: null,
+      };
     }
 
     // Create session token

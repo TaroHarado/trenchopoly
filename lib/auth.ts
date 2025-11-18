@@ -43,45 +43,87 @@ export async function verifySignature(
   }
 }
 
+// In-memory nonce storage (for when database is not available)
+const nonceStore = new Map<string, { nonce: string; expiresAt: Date }>();
+
 export async function generateNonce(walletAddress: string): Promise<string> {
   const nonce = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
   const expiresAt = new Date();
   expiresAt.setMinutes(expiresAt.getMinutes() + 10); // 10 minutes expiry
 
-  await prisma.authNonce.upsert({
-    where: { walletAddress },
-    update: {
-      nonce,
-      expiresAt,
-    },
-    create: {
-      walletAddress,
-      nonce,
-      expiresAt,
-    },
-  });
+  // Try database first, fallback to memory
+  const hasDatabase = process.env.DATABASE_URL && 
+    process.env.DATABASE_URL !== "file:./prisma/dev.db" &&
+    !process.env.DATABASE_URL.includes("undefined");
 
+  if (hasDatabase) {
+    try {
+      await prisma.authNonce.upsert({
+        where: { walletAddress },
+        update: {
+          nonce,
+          expiresAt,
+        },
+        create: {
+          walletAddress,
+          nonce,
+          expiresAt,
+        },
+      });
+      return nonce;
+    } catch (error) {
+      console.warn("[AUTH] Database error, using in-memory storage:", error);
+    }
+  }
+
+  // Fallback to in-memory storage
+  nonceStore.set(walletAddress, { nonce, expiresAt });
   return nonce;
 }
 
 export async function verifyNonce(walletAddress: string, nonce: string): Promise<boolean> {
-  const authNonce = await prisma.authNonce.findUnique({
-    where: { walletAddress },
-  });
+  const hasDatabase = process.env.DATABASE_URL && 
+    process.env.DATABASE_URL !== "file:./prisma/dev.db" &&
+    !process.env.DATABASE_URL.includes("undefined");
 
-  if (!authNonce || authNonce.nonce !== nonce) {
+  if (hasDatabase) {
+    try {
+      const authNonce = await prisma.authNonce.findUnique({
+        where: { walletAddress },
+      });
+
+      if (!authNonce || authNonce.nonce !== nonce) {
+        return false;
+      }
+
+      if (new Date() > authNonce.expiresAt) {
+        return false;
+      }
+
+      // Delete used nonce
+      await prisma.authNonce.delete({
+        where: { walletAddress },
+      });
+
+      return true;
+    } catch (error) {
+      console.warn("[AUTH] Database error, checking in-memory storage:", error);
+    }
+  }
+
+  // Fallback to in-memory storage
+  const stored = nonceStore.get(walletAddress);
+  if (!stored || stored.nonce !== nonce) {
     return false;
   }
 
-  if (new Date() > authNonce.expiresAt) {
+  if (new Date() > stored.expiresAt) {
+    nonceStore.delete(walletAddress);
     return false;
   }
 
   // Delete used nonce
-  await prisma.authNonce.delete({
-    where: { walletAddress },
-  });
-
+  nonceStore.delete(walletAddress);
   return true;
 }
 
@@ -106,19 +148,44 @@ export async function getSessionUser(): Promise<AuthUser | null> {
     }
 
     const decoded = jwt.verify(token, JWT_SECRET) as { id: string; walletAddress: string };
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.id },
-    });
+    
+    // If no database, return user from JWT token
+    const hasDatabase = process.env.DATABASE_URL && 
+      process.env.DATABASE_URL !== "file:./prisma/dev.db" &&
+      !process.env.DATABASE_URL.includes("undefined");
 
-    if (!user) {
-      return null;
+    if (!hasDatabase) {
+      return {
+        id: decoded.id,
+        walletAddress: decoded.walletAddress,
+        username: undefined,
+      };
     }
 
-    return {
-      id: user.id,
-      walletAddress: user.walletAddress,
-      username: user.username || undefined,
-    };
+    // Try to get user from database
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+      });
+
+      if (!user) {
+        return null;
+      }
+
+      return {
+        id: user.id,
+        walletAddress: user.walletAddress,
+        username: user.username || undefined,
+      };
+    } catch (error) {
+      console.warn("[AUTH] Database error, using JWT data:", error);
+      // Fallback to JWT data
+      return {
+        id: decoded.id,
+        walletAddress: decoded.walletAddress,
+        username: undefined,
+      };
+    }
   } catch {
     return null;
   }

@@ -322,7 +322,7 @@ function InventoryTab() {
     return (
       <div className="text-center py-12">
         <p className="text-red-600 text-lg font-medium">Error loading inventory</p>
-        <p className="text-gray-500 text-sm mt-2">Please make sure you're logged in</p>
+        <p className="text-gray-500 text-sm mt-2">Please make sure you&apos;re logged in</p>
       </div>
     );
   }

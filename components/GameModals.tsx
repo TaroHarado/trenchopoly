@@ -102,7 +102,7 @@ export function GameModals({
             <h2 className="text-3xl font-bold bg-gradient-to-r from-emerald-400 to-indigo-400 bg-clip-text text-transparent mb-2">
               Your Turn!
             </h2>
-            <p className="text-zinc-400 mb-6">We're rooting for you 🧪</p>
+            <p className="text-zinc-400 mb-6">We&apos;re rooting for you 🧪</p>
             <button
               type="button"
               onClick={(e) => {

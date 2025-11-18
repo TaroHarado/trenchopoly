@@ -12,6 +12,11 @@ function generateGameCode(): string {
 
 export async function GET(request: NextRequest) {
   try {
+    // If no database, return empty games list
+    if (!process.env.DATABASE_URL || process.env.DATABASE_URL === "file:./prisma/dev.db") {
+      return NextResponse.json({ games: [] });
+    }
+
     const searchParams = request.nextUrl.searchParams;
     const type = searchParams.get("type");
     const status = searchParams.get("status");
@@ -36,47 +41,57 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const games = await prisma.game.findMany({
-      where,
-      include: {
-        creator: {
-          select: {
-            id: true,
-            walletAddress: true,
-            username: true,
+    try {
+      const games = await prisma.game.findMany({
+        where,
+        include: {
+          creator: {
+            select: {
+              id: true,
+              walletAddress: true,
+              username: true,
+            },
           },
-        },
-        players: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                walletAddress: true,
-                username: true,
+          players: {
+            include: {
+              user: {
+                select: {
+                  id: true,
+                  walletAddress: true,
+                  username: true,
+                },
               },
             },
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      take: 50,
-    });
+        orderBy: {
+          createdAt: "desc",
+        },
+        take: 50,
+      });
 
-    return NextResponse.json({ games });
+      return NextResponse.json({ games });
+    } catch (dbError: any) {
+      console.warn("[GAMES_API] Database error, returning empty list:", dbError?.message);
+      return NextResponse.json({ games: [] });
+    }
   } catch (error) {
     console.error("Error fetching games:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ games: [] });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getSessionUser();
+    // If no database, return error
+    if (!process.env.DATABASE_URL || process.env.DATABASE_URL === "file:./prisma/dev.db") {
+      return NextResponse.json(
+        { error: "Database not configured. Games cannot be created without a database." },
+        { status: 503 }
+      );
+    }
+
+    const user = await getSessionUser().catch(() => null);
     if (!user) {
       return NextResponse.json(
         { error: "Unauthorized" },
@@ -104,30 +119,38 @@ export async function POST(request: NextRequest) {
     const code = generateGameCode();
     const boardConfigJson = JSON.stringify(boardConfig);
 
-    const game = await prisma.game.create({
-      data: {
-        code,
-        type,
-        buyInSol: type === "PAID" ? buyInSol : null,
-        maxPlayers,
-        creatorId: user.id,
-        boardConfig: boardConfigJson,
-        status: "WAITING",
-      },
-    });
+    try {
+      const game = await prisma.game.create({
+        data: {
+          code,
+          type,
+          buyInSol: type === "PAID" ? buyInSol : null,
+          maxPlayers,
+          creatorId: user.id,
+          boardConfig: boardConfigJson,
+          status: "WAITING",
+        },
+      });
 
-    // Create host player
-    await prisma.gamePlayer.create({
-      data: {
-        gameId: game.id,
-        userId: user.id,
-        isHost: true,
-        isReady: false,
-        hasPaidBuyIn: type === "FREE",
-      },
-    });
+      // Create host player
+      await prisma.gamePlayer.create({
+        data: {
+          gameId: game.id,
+          userId: user.id,
+          isHost: true,
+          isReady: false,
+          hasPaidBuyIn: type === "FREE",
+        },
+      });
 
-    return NextResponse.json({ game });
+      return NextResponse.json({ game });
+    } catch (dbError: any) {
+      console.error("[GAMES_API] Database error creating game:", dbError?.message);
+      return NextResponse.json(
+        { error: "Database error. Please configure DATABASE_URL." },
+        { status: 503 }
+      );
+    }
   } catch (error) {
     console.error("Error creating game:", error);
     return NextResponse.json(
