@@ -68,15 +68,12 @@ export async function verifyTransferSignature(
 
     // Verify sender if provided
     if (expectedFrom) {
-      const accountKeys = tx.transaction.message.accountKeys;
-      const signers = tx.transaction.message.accountKeys
-        .filter((_, index) => tx.transaction.signatures.some((sig, sigIndex) => 
-          sigIndex < tx.transaction.message.header.numRequiredSignatures && 
-          tx.meta?.signatures?.[sigIndex]?.err === null
-        ));
+      // Handle both legacy and versioned transactions
+      const accountKeys = tx.transaction.message.getAccountKeys();
+      const staticAccountKeys = accountKeys.staticAccountKeys;
       
       // The first signer is typically the fee payer (sender)
-      const senderPubkey = accountKeys[0];
+      const senderPubkey = staticAccountKeys[0];
       if (senderPubkey.toBase58() !== expectedFrom) {
         return { 
           valid: false, 
@@ -90,9 +87,11 @@ export async function verifyTransferSignature(
     const postBalances = tx.meta.postBalances;
 
     // Find the account index for expectedTo
-    const accountKeys = tx.transaction.message.accountKeys;
-    const toIndex = accountKeys.findIndex(
-      (key) => key.toBase58() === expectedTo
+    // Handle both legacy and versioned transactions
+    const accountKeys = tx.transaction.message.getAccountKeys();
+    const staticAccountKeys = accountKeys.staticAccountKeys;
+    const toIndex = staticAccountKeys.findIndex(
+      (key: PublicKey) => key.toBase58() === expectedTo
     );
 
     if (toIndex === -1) {

@@ -406,6 +406,14 @@ export function applyAction(
       }
 
       // Check balance
+      if (!tile.price) {
+        console.log("[BUY_PROPERTY GUARD FAILED] Tile has no price", {
+          tileId: action.tileId,
+        });
+        newState.lastAction = "Property has no price";
+        return newState;
+      }
+
       if (currentPlayer.balance < tile.price) {
         console.log("[BUY_PROPERTY GUARD FAILED] Insufficient balance", {
           balance: currentPlayer.balance,

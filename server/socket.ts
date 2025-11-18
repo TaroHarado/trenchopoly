@@ -252,7 +252,7 @@ export function initializeSocket(server: HTTPServer) {
           where: { id: gameId },
           data: {
             turnState: JSON.stringify(newState),
-            status: gameFinished ? "FINISHED" : (newState.gameStatus ?? game.status),
+            status: gameFinished ? "FINISHED" : game.status,
             ...(gameFinished && gameEnd.winnerId ? {
               winnerId: gameEnd.winnerId,
               endedAt: new Date(),
@@ -263,7 +263,7 @@ export function initializeSocket(server: HTTPServer) {
         // 4) шлём state-update во ВСЮ комнату (включая отправителя)
         io!.to(`room:${gameId}`).emit("state-update", {
           gameId,
-          gameStatus: gameFinished ? "FINISHED" : (newState.gameStatus ?? "IN_PROGRESS"),
+          gameStatus: gameFinished ? "FINISHED" : "IN_PROGRESS",
           state: newState,
           boardConfig,
         });
@@ -413,7 +413,8 @@ async function playBotTurn(
     }
 
     // Если игра закончилась, выходим
-    if (state.gameEnded || freshGame.status === "FINISHED") {
+    // Note: freshGame.status is already checked to be "IN_PROGRESS" above, so we only check state.gameEnded
+    if (state.gameEnded) {
       console.log("[BOT] Game finished, exiting");
       return;
     }
