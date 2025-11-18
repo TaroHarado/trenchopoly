@@ -187,22 +187,40 @@ export function initializeSocket(server: HTTPServer) {
       try {
         const { gameId, action, playerId } = data;
 
-        // 1) грузим игру и стейт из БД
-        const game = await prisma.game.findUnique({
-          where: { id: gameId },
-          include: {
-            players: true,
-          },
-        });
+        // 1) грузим игру и стейт из БД или memory store
+        let game: any;
+        let state: GameState;
+        let boardConfig: BoardConfig;
 
-        if (!game || !game.turnState) {
-          console.error("[SOCKET SERVER] Game not found or has no state", { gameId });
-          socket.emit("error", { message: "Game not found" });
-          return;
+        if (!hasDatabase()) {
+          // Use memory store
+          const memoryGame = memoryStore.getGame(gameId);
+          if (!memoryGame || !memoryGame.turnState) {
+            console.error("[SOCKET SERVER] Game not found or has no state", { gameId });
+            socket.emit("error", { message: "Game not found" });
+            return;
+          }
+          game = memoryGame;
+          state = JSON.parse(memoryGame.turnState);
+          boardConfig = JSON.parse(memoryGame.boardConfig);
+        } else {
+          // Use database
+          game = await prisma.game.findUnique({
+            where: { id: gameId },
+            include: {
+              players: true,
+            },
+          });
+
+          if (!game || !game.turnState) {
+            console.error("[SOCKET SERVER] Game not found or has no state", { gameId });
+            socket.emit("error", { message: "Game not found" });
+            return;
+          }
+
+          state = JSON.parse(game.turnState);
+          boardConfig = JSON.parse(game.boardConfig);
         }
-
-        const state: GameState = JSON.parse(game.turnState);
-        const boardConfig = JSON.parse(game.boardConfig) as BoardConfig;
 
         // Verify player belongs to authenticated user
         const authenticatedUserId = (socket as any).userId;
